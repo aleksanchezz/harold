@@ -80,6 +80,9 @@ class DataBaseConnection(object):
     def close_session(self):
         self.session.commit()
 
+    def get_id(self, table):
+        return len(self.simple_select(table)) + 1
+
 
 dbc = DataBaseConnection()
 
