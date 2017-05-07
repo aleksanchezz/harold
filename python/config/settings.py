@@ -11,3 +11,5 @@ PHAROLD_SETTINGS = {
     'user': 'harold',
     'dbname': 'harold'
 }
+
+LOG_FILE_NAME = '/logs/harold/harold.log'
