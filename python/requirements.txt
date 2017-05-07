@@ -7,3 +7,4 @@ python-gnupg==0.4.0
 requests==2.13.0
 yarg==0.1.9
 psycopg2==2.7.1
+SQLAlchemy==1.1.9
