@@ -10,11 +10,15 @@
     >>> import nltk
     >>> nltk.download()
 
+tokenization/punkt/russian.pickle -> $ git clone https://github.com/mhq/train_punkt.git
+
 """
 
 import logging
 from parser.fiction_book import FictionBook
 import re
+from nltk import sent_tokenize, word_tokenize
+from string import punctuation as punct
 
 logger = logging.getLogger('harold.text_processor')
 
@@ -24,9 +28,43 @@ class TextProcessor(object):
     def __init__(self, filename):
 
         self.file = FictionBook(filename)
+        self.sentences = []
+        self.words = []
+        self._punctuation_symbols = None
+        self._punctuation = {}
+
+    @property
+    def punctuation_symbols(self):
+        if self._punctuation_symbols is None:
+            self._punctuation_symbols = [u'«', u'»', u'…', u'—', u'“', u'„']
+        return self._punctuation_symbols
+
+    @property
+    def punctuation(self):
+        if not bool(self._punctuation):
+            self._punctuation = {}
+            print 'here'
+            for symbol in self.punctuation_symbols:
+                self._punctuation.update({symbol: 0})
+            for symbol in punct:
+                self._punctuation.update({symbol: 0})
+        return self._punctuation
 
     def handle_encoding(self):
         pass
+
+    def _process_word(self, word):
+        """Разрешает конфликты внутри слова, когда парсер не может отделить
+        некотрые знаки пунктуации от слова в основном: кавычки и многоточия
+
+        будет использован список self.punctuation_symbols"""
+        _clean_word = ''
+        for symbol in word:
+            if symbol not in self._punctuation_symbols:
+                _clean_word += symbol
+            else:
+                self._punctuation[symbol] += 1
+        return _clean_word
 
     def _remove_and_replace_symbols(self, text):
         """
@@ -60,7 +98,6 @@ class TextProcessor(object):
 
         """
         text_len = {}
-
         text_len.update({"raw": len(text)})
 
         text = re.sub('[[].*?]', '', text)
@@ -90,13 +127,37 @@ class TextProcessor(object):
 
         return cleaned_text
 
+    def _split_into_tokens(self, text):
+        """Разбирает текст на предложения и слова, попутно решая возникающие конфликты и считающие пунтктуацию"""
+
+        self.sentences = sent_tokenize(text, language='russian')
+        _count = 0
+        for sentence in self.sentences:
+            _words = word_tokenize(sentence, language='russian')
+            clean_words = []
+            for _word in _words:
+                if _word in self.punctuation:
+                    self.punctuation[_word] += 1
+                else:
+                    _word = self._process_word(_word).lower()
+                    clean_words.append(_word)
+                    if not _word.isalpha() and '-' not in _word:
+                        _count += 1
+                        logger.warn('Neither word not punctuation: {}'.format(_word.encode('utf-8')))
+            self.words.append(clean_words)
+
+        import pdb
+        pdb.set_trace()
+
+        return _count
+
     def main_text_processing(self):
         """
         Фактически точка входу в обработку текста:
 
-            - убрать из текста лишние символы
-            - разбить текст на предложения
-            - разбить предложения на слова
+            + убрать из текста лишние символы
+            + разбить текст на предложения
+            + разбить предложения на слова
             - обработать слова
             - КОНФЛИКТЫ??
             - собрать статистику
@@ -105,5 +166,5 @@ class TextProcessor(object):
         raw_text = self.file.text
 
         cleared_raw_text = self._remove_and_replace_symbols(raw_text)
-        print len(cleared_raw_text) - len(raw_text)
+        parsing_conflicts = self._split_into_tokens(cleared_raw_text)
 
