@@ -19,6 +19,8 @@ from parser.fiction_book import FictionBook
 import re
 from nltk import sent_tokenize, word_tokenize
 from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS
+from pymorphy2 import MorphAnalyzer
+from pymorphy2.tagset import OpencorporaTag
 
 logger = logging.getLogger('harold.text_processor')
 
@@ -29,7 +31,10 @@ class TextProcessor(object):
 
         self.file = FictionBook(filename)
         self.sentences = []
+        self.sentences_count = 0
         self.words = []
+        self.words_count = 0
+        self.speech_parts = []
         self._punctuation_symbols = None
         self._punctuation = {}
 
@@ -129,12 +134,14 @@ class TextProcessor(object):
         self.sentences = sent_tokenize(text, language='russian')
         _count = 0
         for sentence in self.sentences:
+            self.sentences_count += 1
             _words = word_tokenize(sentence, language='russian')
             clean_words = []
             for _word in _words:
                 if _word in self.punctuation:
                     self.punctuation[_word] += 1
                 else:
+                    self.words_count += 1
                     _word = self._process_word(_word).lower()
                     clean_words.append(_word)
                     if not _word.isalpha() and '-' not in _word:
@@ -142,10 +149,27 @@ class TextProcessor(object):
                         logger.warn('Neither word not punctuation: {}'.format(_word.encode('utf-8')))
             self.words.append(clean_words)
 
-        import pdb
-        pdb.set_trace()
-
         return _count
+
+    def _define_part_of_speech(self):
+        """Проходит по тексту и определяет части речи каждого слова"""
+        conflicts = dict()
+        print "in morph"
+        morph = MorphAnalyzer()
+        _count = 0
+        for sentence in self.words:
+            for word in sentence:
+                m = morph.parse(word)
+                if m[0].tag.POS is None:
+                    import pdb
+                    pdb.set_trace()
+                    _count += 1
+                    if word not in conflicts:
+                        conflicts.update({word: u'NOUN'})
+
+        print self.words_count, _count
+
+        return conflicts
 
     def main_text_processing(self):
         """
@@ -154,7 +178,7 @@ class TextProcessor(object):
             + убрать из текста лишние символы
             + разбить текст на предложения
             + разбить предложения на слова
-            - обработать слова
+            + обработать слова
             - КОНФЛИКТЫ??
             - собрать статистику
             - сохранить новые N-граммы
@@ -163,6 +187,11 @@ class TextProcessor(object):
 
         cleared_raw_text = self._remove_and_replace_symbols(raw_text)
         parsing_conflicts = self._split_into_tokens(cleared_raw_text)
+
+        v = self._define_part_of_speech()
+
+        import pdb
+        pdb.set_trace()
 
         for item in self.punctuation:
             print item, self.punctuation[item]
