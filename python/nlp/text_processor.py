@@ -18,7 +18,7 @@ import logging
 from parser.fiction_book import FictionBook
 import re
 from nltk import sent_tokenize, word_tokenize
-from string import punctuation as punct
+from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS
 
 logger = logging.getLogger('harold.text_processor')
 
@@ -36,17 +36,13 @@ class TextProcessor(object):
     @property
     def punctuation_symbols(self):
         if self._punctuation_symbols is None:
-            self._punctuation_symbols = [u'«', u'»', u'…', u'—', u'“', u'„']
+            self._punctuation_symbols = CUSTOM_PUNCTUATION_SYMBOLS
         return self._punctuation_symbols
 
     @property
     def punctuation(self):
         if not bool(self._punctuation):
-            self._punctuation = {}
-            print 'here'
-            for symbol in self.punctuation_symbols:
-                self._punctuation.update({symbol: 0})
-            for symbol in punct:
+            for symbol in PUNCTUATION_SYMBOLS:
                 self._punctuation.update({symbol: 0})
         return self._punctuation
 
@@ -60,7 +56,7 @@ class TextProcessor(object):
         будет использован список self.punctuation_symbols"""
         _clean_word = ''
         for symbol in word:
-            if symbol not in self._punctuation_symbols:
+            if symbol not in self.punctuation_symbols:
                 _clean_word += symbol
             else:
                 self._punctuation[symbol] += 1
@@ -167,4 +163,7 @@ class TextProcessor(object):
 
         cleared_raw_text = self._remove_and_replace_symbols(raw_text)
         parsing_conflicts = self._split_into_tokens(cleared_raw_text)
+
+        for item in self.punctuation:
+            print item, self.punctuation[item]
 
