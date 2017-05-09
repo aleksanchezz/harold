@@ -17,7 +17,7 @@ LOG_FILE_NAME = '/logs/harold/harold.log'
 
 # Добавлять вручную выявленные в процессе парсинга новые знаки пунктуации
 # попавшие в конфликты (см. лог файл)
-CUSTOM_PUNCTUATION_SYMBOLS = [u'«', u'»', u'…', u'—', u'“', u'„']
+CUSTOM_PUNCTUATION_SYMBOLS = [u'«', u'»', u'…', u'—', u'“', u'„', u'–']
 
 # Сводный веткор символов пунктуации для сохранения информации в память
 PUNCTUATION_SYMBOLS = list(punctuation) + CUSTOM_PUNCTUATION_SYMBOLS
