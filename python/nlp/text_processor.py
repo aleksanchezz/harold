@@ -191,6 +191,36 @@ class TextProcessor(object):
 
         return counter, filename
 
+    def _resolve_conflicts(self, filename):
+        """Считывает информацию из обработанного файла, содержащего описание конфликтов
+        и заменяет элменты со значением 'NOPOS' в массиве self.speech_parts
+
+           0          1           2         3                 4                   5
+        <номер>, <чатсь речи>, <слово>, <кол-во таких слов>
+               ,             ,        , <предложение>, <индекс-предложения>, <индекс-слова>
+        """
+
+        with io.open(filename, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+            f.close()
+
+        line_iter = iter(lines)
+
+        while True:
+            item = next(line_iter, None)
+            if not item:
+                break
+            line = item.split(',')
+            if line[0] is not None:
+
+                capacity = line[3]
+                pos = line[2]
+                for i in range(int(capacity)):
+                    line = next(line_iter, None).split(',')
+                    self.speech_parts[int(line[4])][int(line[5])] = pos
+
+        return 0
+
     def _define_part_of_speech(self):
         """Проходит по тексту и определяет части речи каждого слова"""
         conflicts = dict()
@@ -233,6 +263,15 @@ class TextProcessor(object):
 
         return conflicts
 
+    def _check_for_conflicts(self):
+        """Проверяет массив self.speech_parts на наличие записи 'NOPOS'
+        """
+        for sentence in self.speech_parts:
+            for word in sentence:
+                if word == 'NOPOS':
+                    return False
+        return True
+
     def main_text_processing(self):
         """
         Фактически точка входу в обработку текста:
@@ -251,8 +290,13 @@ class TextProcessor(object):
         parsing_conflicts = self._split_into_tokens(cleared_raw_text)
 
         v = self._define_part_of_speech()
-        morph_conflicts, path = self._write_conflicts_to_file(v)
-        print '{} conflicts were written to file: {}'.format(morph_conflicts, path)
+
+        # morph_conflicts, path = self._write_conflicts_to_file(v)
+        # print '{} conflicts were written to file: {}'.format(morph_conflicts, path)
+
+        self._resolve_conflicts('/etc/harold/conflicts/Po_kom_zvonit_kolokol/conflicts_12.csv')
+
+        print self._check_for_conflicts()
 
         import pdb
         pdb.set_trace()
