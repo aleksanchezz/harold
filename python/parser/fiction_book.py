@@ -11,8 +11,7 @@
 from pyfb2.fb2 import PyFb2, PublishInfo
 from pyfb2.body import TagBody, MainTag, TagP, TAGS
 from db.models import DataBaseConnection, Author, Book
-
-import pdb
+from transliterate import translit
 
 
 class FictionBook(PyFb2):
@@ -99,6 +98,11 @@ class FictionBook(PyFb2):
 
     def _get_namespace(self):
         return self.root.nsmap
+
+    def traslit(self, word):
+        result = translit(word, 'ru', reversed=True)
+        return result.replace(' ', '_')
+
 
     def save_book_info_to_db(self):
         """

@@ -18,9 +18,10 @@ import logging
 from parser.fiction_book import FictionBook
 import re
 from nltk import sent_tokenize, word_tokenize
-from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS
+from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS, CONFLICTS_FOLDER_PATH
 from pymorphy2 import MorphAnalyzer
-from pymorphy2.tagset import OpencorporaTag
+import os
+import io
 
 logger = logging.getLogger('harold.text_processor')
 
@@ -151,6 +152,45 @@ class TextProcessor(object):
 
         return _count
 
+    def _write_conflicts_to_file(self, conflicts):
+        """Записывает слова с csv файл в следующем формате:
+
+        <номер>, <чатсь речи>, <слово>, <кол-во таких слов>
+               ,             ,        , <предложение>, <индекс-предложения>, <индекс-слова>
+
+        """
+        print "in conflict resolution"
+        folder = '/'.join([CONFLICTS_FOLDER_PATH, self.file.traslit(self.file.book_info['title'])])
+        filename = 'conflicts'
+        counter = 1
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+        else:
+            counter = len(os.listdir(folder)) + 1
+
+        filename = filename + '_' + str(counter) + '.csv'
+        filename = '/'.join([folder, filename])
+        f = io.open(filename, 'w+', encoding='utf-8')
+
+        # здесь counter используется как счетчик конфликтов
+        counter = 0
+        for word in conflicts:
+            counter += 1
+            line = ','.join([str(counter), word, conflicts[word]['speech_part'], str(len(conflicts[word]['indicies']))]) + '\n'
+
+            for index in conflicts[word]['indicies']:
+                sentence_to_write = self.sentences[index[0]]
+                # Чтобы не было сдвигов в самом csv файле, из текста нужно убрать запятые и точки с запятой
+                sentence_to_write = sentence_to_write.replace(',', ' ')
+                sentence_to_write = sentence_to_write.replace(';', ' ')
+
+                line += ',,,' + sentence_to_write + ',' + str(index[0]) + ',' + str(index[1]) + '\n'
+
+            f.write(line)
+        f.close()
+
+        return counter, filename
+
     def _define_part_of_speech(self):
         """Проходит по тексту и определяет части речи каждого слова"""
         conflicts = dict()
@@ -158,15 +198,38 @@ class TextProcessor(object):
         morph = MorphAnalyzer()
         _count = 0
         for s in range(self.sentences_count):
+
+            _sentence_pos = []
             for w in range(len(self.words[s])):
+
                 word = self.words[s][w]
                 m = morph.parse(word)
+
                 if m[0].tag.POS is None:
+                    _sentence_pos.append('NOPOS')
                     _count += 1
                     if word not in conflicts:
-                        conflicts.update({word: u'NOUN'})
+                        conflicts.update(
+                            {
+                                word: {
+                                    'speech_part': u'NOUN',
+                                    'indicies': [(s, w)]
+                                    }
+                            })
+                    else:
+                        conflicts[word]['indicies'].append((s, w))
+                else:
+                    _sentence_pos.append(m[0].tag.POS.__str__())
+            self.speech_parts.append(_sentence_pos)
 
-        print self.words_count, _count
+        logger.info('\n[MORPH] Words were proceeded with pymorph:\n'
+                    '\tTotal words in text: {words}\n'
+                    '\tTotal sentences in text: {sent}\n'
+                    '\tTotal words with no POS determined: {confl}\n'
+                    '\tUnique words with no POS : {un}'.format(words=self.words_count,
+                                                               sent=self.sentences_count,
+                                                               confl=_count,
+                                                               un=len(conflicts)))
 
         return conflicts
 
@@ -188,6 +251,8 @@ class TextProcessor(object):
         parsing_conflicts = self._split_into_tokens(cleared_raw_text)
 
         v = self._define_part_of_speech()
+        morph_conflicts, path = self._write_conflicts_to_file(v)
+        print '{} conflicts were written to file: {}'.format(morph_conflicts, path)
 
         import pdb
         pdb.set_trace()
