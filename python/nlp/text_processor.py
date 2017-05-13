@@ -157,12 +157,11 @@ class TextProcessor(object):
         print "in morph"
         morph = MorphAnalyzer()
         _count = 0
-        for sentence in self.words:
-            for word in sentence:
+        for s in range(self.sentences_count):
+            for w in range(len(self.words[s])):
+                word = self.words[s][w]
                 m = morph.parse(word)
                 if m[0].tag.POS is None:
-                    import pdb
-                    pdb.set_trace()
                     _count += 1
                     if word not in conflicts:
                         conflicts.update({word: u'NOUN'})
