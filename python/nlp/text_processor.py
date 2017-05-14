@@ -41,6 +41,9 @@ class TextProcessor(object):
         # Статистические словари
         self._punctuation = {}
         self._pos = {}
+        self._ngramm = {}
+        # Список N-грамм
+        self._ngramm_list = []
 
     @property
     def punctuation_symbols(self):
@@ -61,6 +64,19 @@ class TextProcessor(object):
             for item in SPEECH_PARTS:
                 self._pos.update({item: 0})
         return self._pos
+
+    @property
+    def ngramm_list(self):
+        if self._ngramm_list is None:
+            self._ngramm_list = self.file_processor.load_ngramm_from_pickle()
+        return self._ngramm_list
+
+    @property
+    def ngramm(self):
+        if not bool(self._ngramm):
+            for item in self.ngramm_list:
+                self._ngramm.update({item: 0})
+        return self._ngramm
 
     def _process_word(self, word):
         """Разрешает конфликты внутри слова, когда парсер не может отделить
@@ -238,6 +254,14 @@ class TextProcessor(object):
                     return False
         return True
 
+    def _add_ngramm(self, _ngramm):
+        """Добавляет N-грамму в словарь self.ngramm и в список self.ngramm_list"""
+        if _ngramm in self.ngramm:
+            self.ngramm[_ngramm] += 1
+        else:
+            self.ngramm.update({_ngramm: 1})
+            self.ngramm_list.append(_ngramm)
+
     def _make_statistic_array(self, _dict, _const_list):
         """Структура данных языка python dict работает по принципу хэш-таблиц,
         поэтому порядок следования ключей, необходимый в массиве статистических данных, не гарантирован
@@ -260,13 +284,26 @@ class TextProcessor(object):
         _text_id = dbc.get_id(Text)
         text = Text(id=_text_id,
                     book_id=book_id,
-                    ngramms_array=self._make_statistic_array(self.punctuation, PUNCTUATION_SYMBOLS),
+                    ngramms_array=self._make_statistic_array(self.ngramm, self.ngramm_list),
                     parts_array=self._make_statistic_array(self.pos, SPEECH_PARTS),
                     punct_array=self._make_statistic_array(self.punctuation, PUNCTUATION_SYMBOLS),
                     code_name=self.file.book_code_name
                     )
         dbc.create_or_update(text)
         dbc.close_session()
+
+    def _collect_ngramms(self):
+        """Собирает частеречевые N-граммы
+        """
+
+        for s, sentence in enumerate(self.speech_parts):
+
+            if len(sentence) >= 3:
+                for w in range(len(sentence)-2):
+                    _ngramm = '-'.join([sentence[w], sentence[w+1], sentence[w+2]])
+                    self._add_ngramm(_ngramm)
+
+        self.file_processor.save_ngramm_to_pickle(self.ngramm_list)
 
     def main_text_processing(self):
         """
@@ -307,19 +344,22 @@ class TextProcessor(object):
 
         """
         db_book_id = self.file.save_book_info_to_db()
-        print db_book_id
+
         self.speech_parts = self.file_processor.load_speech_parts_from_pickle()
         self._pos = self.file_processor.load_pos_from_pickle()
         self._punctuation = self.file_processor.load_punctuation_from_pickle()
+        self._collect_ngramms()
 
         self._save_text_to_db(db_book_id)
 
         import pdb
         pdb.set_trace()
 
+        """
         for item in self.punctuation:
             print item, self.punctuation[item]
 
         for item in self.pos:
             print item, self.pos[item]
+        """
 

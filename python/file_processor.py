@@ -9,7 +9,7 @@
 """
 
 import logging
-from config.settings import FILES_FOLDER_PATH, CONFLICTS_FOLDER, PICKLES_FOLDER
+from config.settings import FILES_FOLDER_PATH, CONFLICTS_FOLDER, PICKLES_FOLDER, NGRAMMS_FOLDER_PATH
 import os
 import io
 import cPickle as pickle
@@ -41,6 +41,7 @@ class FileProcessor(object):
         self.speech_parts_filename = '/'.join([self.pickles_folder, 'speech_parts.pkl'])
         self.punctuation_filename = '/'.join([self.pickles_folder, 'punctuation.pkl'])
         self.pos_filename = '/'.join([self.pickles_folder, 'pos.pkl'])
+        self.ngramm_filename = '/'.join([NGRAMMS_FOLDER_PATH, 'ngramm.pkl'])
 
     def save_conflicts_to_csv(self, conflicts, sentences):
         """Записывает слова с csv файл в следующем формате:
@@ -163,3 +164,22 @@ class FileProcessor(object):
         logger.info('[PICKLE] File was read: {file}'.format(file=self.pos_filename))
 
         return obj
+
+    def load_ngramm_from_pickle(self):
+        """Загружает список ngramm
+        """
+
+        inp = open(self.ngramm_filename, 'rb')
+        obj = pickle.load(inp)
+        inp.close()
+        logger.info('[PICKLE] File was read: {file}'.format(file=self.ngramm_filename))
+
+        return obj
+
+    def save_ngramm_to_pickle(self, ngramm):
+        """Сохраняет N-граммы в файл"""
+
+        output = open(self.ngramm_filename, 'wb')
+        pickle.dump(ngramm, output, 2)
+        output.close()
+        logger.info('[PICKLE] File was written: {file}'.format(file=self.ngramm_filename))

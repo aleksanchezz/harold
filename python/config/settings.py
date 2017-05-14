@@ -17,6 +17,7 @@ LOG_FILE_NAME = '/logs/harold/harold.log'
 FILES_FOLDER_PATH = '/etc/harold'
 CONFLICTS_FOLDER = 'conflicts'
 PICKLES_FOLDER = 'pickles'
+NGRAMMS_FOLDER_PATH = '/etc/harold/.ngramm'
 
 # Добавлять вручную выявленные в процессе парсинга новые знаки пунктуации
 # попавшие в конфликты (см. лог файл)
