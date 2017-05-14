@@ -75,7 +75,7 @@ class FictionBook(PyFb2):
     @property
     def book_code_name(self):
         if self._book_code_name is None:
-            self._book_code_name = self.traslit(self.book_info['title'])
+            self._book_code_name = self.traslit(self.book_info['title']).lower()
         return self._book_code_name
 
     def _get_meta_info(self):
