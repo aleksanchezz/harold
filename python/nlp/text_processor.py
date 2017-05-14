@@ -21,6 +21,7 @@ import re
 from nltk import sent_tokenize, word_tokenize
 from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS, SPEECH_PARTS
 from pymorphy2 import MorphAnalyzer
+from db.models import DataBaseConnection, Text
 
 logger = logging.getLogger('harold.text_processor')
 
@@ -237,6 +238,36 @@ class TextProcessor(object):
                     return False
         return True
 
+    def _make_statistic_array(self, _dict, _const_list):
+        """Структура данных языка python dict работает по принципу хэш-таблиц,
+        поэтому порядок следования ключей, необходимый в массиве статистических данных, не гарантирован
+
+        Для этого в соответствии с константами, заданными в файле settings.py, строятся массивы (списки),
+        соблюдение последоваетльности элементов в которых - гарантировано, для дальнейшего сохранения
+        этих векторов признаков в БД, для дальнейших исследований
+        """
+        result = [0] * len(_const_list)
+        for item in _dict:
+            index = _const_list.index(item)
+            result[index] = int(_dict[item])
+
+        return result
+
+    def _save_text_to_db(self, book_id):
+        """Сохраняет собранные статистики в БД Harold"""
+
+        dbc = DataBaseConnection()
+        _text_id = dbc.get_id(Text)
+        text = Text(id=_text_id,
+                    book_id=book_id,
+                    ngramms_array=self._make_statistic_array(self.punctuation, PUNCTUATION_SYMBOLS),
+                    parts_array=self._make_statistic_array(self.pos, SPEECH_PARTS),
+                    punct_array=self._make_statistic_array(self.punctuation, PUNCTUATION_SYMBOLS),
+                    code_name=self.file.book_code_name
+                    )
+        dbc.create_or_update(text)
+        dbc.close_session()
+
     def main_text_processing(self):
         """
         Фактически точка входу в обработку текста:
@@ -272,11 +303,16 @@ class TextProcessor(object):
         self.file_processor.save_speech_parts_to_pickle(self.speech_parts)
         self.file_processor.save_pos_to_pickle(self.pos)
         self.file_processor.save_punctuation_to_pickle(self.punctuation)
-        """
 
+
+        """
+        db_book_id = self.file.save_book_info_to_db()
+        print db_book_id
         self.speech_parts = self.file_processor.load_speech_parts_from_pickle()
         self._pos = self.file_processor.load_pos_from_pickle()
         self._punctuation = self.file_processor.load_punctuation_from_pickle()
+
+        self._save_text_to_db(db_book_id)
 
         import pdb
         pdb.set_trace()
