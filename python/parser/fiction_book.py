@@ -28,6 +28,7 @@ class FictionBook(PyFb2):
         self._text = None
         self._file_info = None
         self._book_info = None
+        self._book_code_name = None
 
     @property
     def author(self):
@@ -70,6 +71,12 @@ class FictionBook(PyFb2):
         if self._book_info is None:
             self._book_info = self._get_book_info()
         return self._book_info
+
+    @property
+    def book_code_name(self):
+        if self._book_code_name is None:
+            self._book_code_name = self.traslit(self.book_info['title'])
+        return self._book_code_name
 
     def _get_meta_info(self):
         res = {}

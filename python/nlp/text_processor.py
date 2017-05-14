@@ -16,12 +16,11 @@ tokenization/punkt/russian.pickle -> $ git clone https://github.com/mhq/train_pu
 
 import logging
 from parser.fiction_book import FictionBook
+from file_processor import FileProcessor
 import re
 from nltk import sent_tokenize, word_tokenize
-from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS, CONFLICTS_FOLDER_PATH
+from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS, FILES_FOLDER_PATH
 from pymorphy2 import MorphAnalyzer
-import os
-import io
 
 logger = logging.getLogger('harold.text_processor')
 
@@ -31,6 +30,7 @@ class TextProcessor(object):
     def __init__(self, filename):
 
         self.file = FictionBook(filename)
+        self.file_processor = FileProcessor(self.file.book_code_name)
         self.sentences = []
         self.sentences_count = 0
         self.words = []
@@ -121,7 +121,7 @@ class TextProcessor(object):
         cleaned_text = ' '.join(clean_paragraphs)
         text_len.update({"clean": len(cleaned_text)})
 
-        logger.info('\nText was cleaned lengths:\n'
+        logger.info('\n[Text cleaning] Resulting lengths:\n'
                     '\traw: {raw}\n'
                     '\tno brackets: {brackets}\n'
                     '\tno tabs: {tabs}\n'
@@ -152,74 +152,24 @@ class TextProcessor(object):
 
         return _count
 
-    def _write_conflicts_to_file(self, conflicts):
-        """Записывает слова с csv файл в следующем формате:
-
-        <номер>, <чатсь речи>, <слово>, <кол-во таких слов>
-               ,             ,        , <предложение>, <индекс-предложения>, <индекс-слова>
-
-        """
-        print "in conflict resolution"
-        folder = '/'.join([CONFLICTS_FOLDER_PATH, self.file.traslit(self.file.book_info['title'])])
-        filename = 'conflicts'
-        counter = 1
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        else:
-            counter = len(os.listdir(folder)) + 1
-
-        filename = filename + '_' + str(counter) + '.csv'
-        filename = '/'.join([folder, filename])
-        f = io.open(filename, 'w+', encoding='utf-8')
-
-        # здесь counter используется как счетчик конфликтов
-        counter = 0
-        for word in conflicts:
-            counter += 1
-            line = ','.join([str(counter), word, conflicts[word]['speech_part'], str(len(conflicts[word]['indicies']))]) + '\n'
-
-            for index in conflicts[word]['indicies']:
-                sentence_to_write = self.sentences[index[0]]
-                # Чтобы не было сдвигов в самом csv файле, из текста нужно убрать запятые и точки с запятой
-                sentence_to_write = sentence_to_write.replace(',', ' ')
-                sentence_to_write = sentence_to_write.replace(';', ' ')
-
-                line += ',,,' + sentence_to_write + ',' + str(index[0]) + ',' + str(index[1]) + '\n'
-
-            f.write(line)
-        f.close()
-
-        return counter, filename
-
     def _resolve_conflicts(self, filename):
-        """Считывает информацию из обработанного файла, содержащего описание конфликтов
-        и заменяет элменты со значением 'NOPOS' в массиве self.speech_parts
-
-           0          1           2         3                 4                   5
-        <номер>, <чатсь речи>, <слово>, <кол-во таких слов>
-               ,             ,        , <предложение>, <индекс-предложения>, <индекс-слова>
+        """Заменяет элменты со значением 'NOPOS' в массиве self.speech_parts,
+        считав информацию из указанного файла
         """
 
-        with io.open(filename, 'r', encoding='utf-8') as f:
-            lines = f.readlines()
-            f.close()
+        resolved_conflicts = self.file_processor.read_conflicts_from_csv(filename)
 
-        line_iter = iter(lines)
+        for item in resolved_conflicts:
+            self.speech_parts[item[1]][item[2]] = item[0]
 
-        while True:
-            item = next(line_iter, None)
-            if not item:
-                break
-            line = item.split(',')
-            if line[0] is not None:
+        result = self._check_for_conflicts()
 
-                capacity = line[3]
-                pos = line[2]
-                for i in range(int(capacity)):
-                    line = next(line_iter, None).split(',')
-                    self.speech_parts[int(line[4])][int(line[5])] = pos
+        if result:
+            logger.info('\nConflicts were successfully resolved from file: {file}'.format(file=filename))
+        else:
+            logger.error('\nNot all conflicts were resolved from file: {file}'.format(file=filename))
 
-        return 0
+        return
 
     def _define_part_of_speech(self):
         """Проходит по тексту и определяет части речи каждого слова"""
@@ -280,7 +230,7 @@ class TextProcessor(object):
             + разбить текст на предложения
             + разбить предложения на слова
             + обработать слова
-            - КОНФЛИКТЫ??
+            + КОНФЛИКТЫ
             - собрать статистику
             - сохранить новые N-граммы
         """
@@ -291,12 +241,13 @@ class TextProcessor(object):
 
         v = self._define_part_of_speech()
 
-        # morph_conflicts, path = self._write_conflicts_to_file(v)
-        # print '{} conflicts were written to file: {}'.format(morph_conflicts, path)
+        # FILE PROCESSOR
+        morph_conflicts, path = self.file_processor.save_conflicts_to_csv(v, self.sentences)
+        print '{} conflicts were written to file: {}'.format(morph_conflicts, path)
 
-        self._resolve_conflicts('/etc/harold/conflicts/Po_kom_zvonit_kolokol/conflicts_12.csv')
+        self._resolve_conflicts('/etc/harold/Po_kom_zvonit_kolokol/conflicts/conflicts_2.csv')
 
-        print self._check_for_conflicts()
+
 
         import pdb
         pdb.set_trace()

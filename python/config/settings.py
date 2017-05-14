@@ -14,7 +14,9 @@ PHAROLD_SETTINGS = {
 }
 
 LOG_FILE_NAME = '/logs/harold/harold.log'
-CONFLICTS_FOLDER_PATH = '/etc/harold/conflicts'
+FILES_FOLDER_PATH = '/etc/harold'
+CONFLICTS_FOLDER = 'conflicts'
+PICKLES_FOLDER = 'pickles'
 
 # Добавлять вручную выявленные в процессе парсинга новые знаки пунктуации
 # попавшие в конфликты (см. лог файл)
