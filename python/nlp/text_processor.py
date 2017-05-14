@@ -134,20 +134,27 @@ class TextProcessor(object):
 
         self.sentences = sent_tokenize(text, language='russian')
         _count = 0
-        for sentence in self.sentences:
+        for s, sentence in enumerate(self.sentences):
             self.sentences_count += 1
             _words = word_tokenize(sentence, language='russian')
             clean_words = []
-            for _word in _words:
+            for w, _word in enumerate(_words):
                 if _word in self.punctuation:
                     self.punctuation[_word] += 1
                 else:
                     self.words_count += 1
                     _word = self._process_word(_word).lower()
                     clean_words.append(_word)
-                    if not _word.isalpha() and '-' not in _word:
+                    if not _word.isalpha() and '-' not in _word and not _word.isnumeric():
                         _count += 1
-                        logger.warn('Neither word not punctuation: {}'.format(_word.encode('utf-8')))
+                        logger.warn('Tokenization failure: {word}\n'
+                                    '\t sentence ({n}, {m}):\n[ {sentence} ]\n'.format(word=_word.encode('utf-8'),
+                                                                                       n=s,
+                                                                                       m=w,
+                                                                                       sentence=sentence.encode('utf-8')
+                                                                                       )
+                                    )
+
             self.words.append(clean_words)
 
         return _count
@@ -239,9 +246,12 @@ class TextProcessor(object):
         cleared_raw_text = self._remove_and_replace_symbols(raw_text)
         parsing_conflicts = self._split_into_tokens(cleared_raw_text)
 
+        if parsing_conflicts > 0:
+            print 'Parsing conflicts were detected {n},\n' \
+                  '\twe advice you to deal with them before further processing'.format(n=parsing_conflicts)
+
         v = self._define_part_of_speech()
 
-        # FILE PROCESSOR
         morph_conflicts, path = self.file_processor.save_conflicts_to_csv(v, self.sentences)
         print '{} conflicts were written to file: {}'.format(morph_conflicts, path)
 
