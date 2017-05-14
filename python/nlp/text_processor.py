@@ -241,6 +241,10 @@ class TextProcessor(object):
             - собрать статистику
             - сохранить новые N-граммы
         """
+        """
+        При тестировании неразумно каждый раз загружать информацию из файла
+        Реализован механизм считывания частей речи из файла .pickle
+
         raw_text = self.file.text
 
         cleared_raw_text = self._remove_and_replace_symbols(raw_text)
@@ -257,6 +261,10 @@ class TextProcessor(object):
 
         self._resolve_conflicts('/etc/harold/Po_kom_zvonit_kolokol/conflicts/conflicts_2.csv')
 
+        self.file_processor.save_pos_to_pickle(self.speech_parts)
+        """
+
+        self.speech_parts = self.file_processor.load_pos_from_pickle()
 
 
         import pdb

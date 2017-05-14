@@ -12,6 +12,7 @@ import logging
 from config.settings import FILES_FOLDER_PATH, CONFLICTS_FOLDER, PICKLES_FOLDER
 import os
 import io
+import cPickle as pickle
 
 logger = logging.getLogger('harold.file_processor')
 
@@ -36,6 +37,8 @@ class FileProcessor(object):
         self.pickles_folder = '/'.join([self.main_folder, PICKLES_FOLDER])
         if not os.path.exists(self.pickles_folder):
             os.makedirs(self.pickles_folder)
+
+        self.pos_filename = '/'.join([self.pickles_folder, 'pos.pkl'])
 
     def save_conflicts_to_csv(self, conflicts, sentences):
         """Записывает слова с csv файл в следующем формате:
@@ -102,4 +105,21 @@ class FileProcessor(object):
 
         return result
 
+    def save_pos_to_pickle(self, speech_parts):
+        """Сохраняет собранные части речи в файл
+        """
 
+        output = open(self.pos_filename, 'wb')
+        pickle.dump(speech_parts, output, 2)
+        output.close()
+        logger.info('[PICKLE] File was written: {file}'.format(file=self.pos_filename))
+
+    def load_pos_from_pickle(self):
+        """Загружает сохраненные части речи"""
+
+        inp = open(self.pos_filename, 'rb')
+        obj = pickle.load(inp)
+        inp.close()
+        logger.info('[PICKLE] File was read: {file}'.format(file=self.pos_filename))
+
+        return obj
