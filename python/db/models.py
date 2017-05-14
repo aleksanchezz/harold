@@ -9,6 +9,7 @@ from sqlalchemy import MetaData
 from sqlalchemy import Column, String, Integer, ForeignKey, ARRAY
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
 
 
 class DataBaseConnection(object):
@@ -77,6 +78,26 @@ class DataBaseConnection(object):
         self.session.refresh(table_row_object)
         return table_row_object.id
 
+    def create_or_update(self, table_row_object):
+        """При сохранении текстов инофрмация может меняться от итерации к итерации, чтобы каждый раз
+        не обрабатывать исключение и не дропать запись из БД сделан механизм обновления"""
+        _class = table_row_object.__class__
+        v = self.session.query(_class.id).filter(_class.code_name==table_row_object.code_name)
+
+        if v.count() > 0:
+            obj = self.session.query(table_row_object.__class__).get(v.first()[0])
+            for item in table_row_object.__dict__:
+                if item != '_sa_instance_state' and 'id' not in item:
+                    new_value = table_row_object.__getattribute__(item)
+                    obj.__setattr__(item, new_value)
+
+            return v.first()[0]
+        else:
+            self.session.add(table_row_object)
+            self.session.flush()
+            self.session.refresh(table_row_object)
+            return table_row_object.id
+
     def close_session(self):
         self.session.commit()
 
@@ -114,7 +135,7 @@ class Text(dbc.base):
 
     id = Column(Integer, primary_key=True)
     book_id = Column(Integer, ForeignKey('books.id'))
-    name = Column(String)
-    values_array = Column(ARRAY(Integer, dimensions=1))
+    ngramms_array = Column(ARRAY(Integer, dimensions=1))
     parts_array = Column(ARRAY(Integer, dimensions=1))
+    punct_array = Column(ARRAY(Integer, dimensions=1))
     code_name = Column(String, unique=True)

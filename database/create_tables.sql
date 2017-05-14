@@ -19,8 +19,8 @@ CREATE TABLE IF NOT EXISTS texts
 (
     id              integer NOT NULL PRIMARY KEY,            -- PK
     book_id         integer NOT NULL REFERENCES books (id),  -- FK
-    name            text NULL,
-    values_array    integer[],
+    ngramms_array   integer[],
     parts_array     integer[],
+    punct_array     integer[],
     code_name       text NULL UNIQUE
 );

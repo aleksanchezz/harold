@@ -75,7 +75,7 @@ class FictionBook(PyFb2):
     @property
     def book_code_name(self):
         if self._book_code_name is None:
-            self._book_code_name = self.traslit(self.book_info['title']).lower()
+            self._book_code_name = self.traslit(self.book_info['title'])
         return self._book_code_name
 
     def _get_meta_info(self):
@@ -107,33 +107,21 @@ class FictionBook(PyFb2):
         return self.root.nsmap
 
     def traslit(self, word):
-        result = translit(word, 'ru', reversed=True)
+        result = translit(word, 'ru', reversed=True).lower()
         return result.replace(' ', '_')
-
 
     def save_book_info_to_db(self):
         """
         Сохраняет информацию об обработанной книге и авторе в БД harold
         """
-
         dbc = DataBaseConnection()
         _author_id = dbc.get_id(Author)
         _book_id = dbc.get_id(Book)
 
-        print 'id=', _author_id
-        print 'name=', self.book_info['author']
-        print 'code_name=', self.book_info['author']
-
         author = Author(id=_author_id,
                         name=self.book_info['author'],
-                        code_name=self.book_info['author']
+                        code_name=self.traslit(self.book_info['author'])
                         )
-
-        print 'title=', self.book_info['title']
-        print 'author_id=', _author_id
-        _genres = ','.join(self.book_info['genres'])
-        print 'genres=', _genres
-        print 'date=', self.book_info['date']
 
         book = Book(id=_book_id,
                     title=self.book_info['title'],
@@ -143,6 +131,7 @@ class FictionBook(PyFb2):
                     code_name=self.book_info['title']
                     )
 
-        print dbc.create(author)
-        print dbc.create(book)
+        _author_id = dbc.create_or_update(author)
+        _book_id = dbc.create_or_update(book)
         dbc.close_session()
+        return _book_id
