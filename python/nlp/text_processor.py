@@ -19,7 +19,7 @@ from parser.fiction_book import FictionBook
 from file_processor import FileProcessor
 import re
 from nltk import sent_tokenize, word_tokenize
-from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS, FILES_FOLDER_PATH
+from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS, SPEECH_PARTS
 from pymorphy2 import MorphAnalyzer
 
 logger = logging.getLogger('harold.text_processor')
@@ -37,7 +37,9 @@ class TextProcessor(object):
         self.words_count = 0
         self.speech_parts = []
         self._punctuation_symbols = None
+        # Статистические словари
         self._punctuation = {}
+        self._pos = {}
 
     @property
     def punctuation_symbols(self):
@@ -52,8 +54,12 @@ class TextProcessor(object):
                 self._punctuation.update({symbol: 0})
         return self._punctuation
 
-    def handle_encoding(self):
-        pass
+    @property
+    def pos(self):
+        if not bool(self._pos):
+            for item in SPEECH_PARTS:
+                self._pos.update({item: 0})
+        return self._pos
 
     def _process_word(self, word):
         """Разрешает конфликты внутри слова, когда парсер не может отделить
@@ -168,6 +174,7 @@ class TextProcessor(object):
 
         for item in resolved_conflicts:
             self.speech_parts[item[1]][item[2]] = item[0]
+            self.pos[item[0]] += 1
 
         result = self._check_for_conflicts()
 
@@ -207,6 +214,7 @@ class TextProcessor(object):
                         conflicts[word]['indicies'].append((s, w))
                 else:
                     _sentence_pos.append(m[0].tag.POS.__str__())
+                    self.pos[m[0].tag.POS.__str__()] += 1
             self.speech_parts.append(_sentence_pos)
 
         logger.info('\n[MORPH] Words were proceeded with pymorph:\n'
@@ -261,15 +269,21 @@ class TextProcessor(object):
 
         self._resolve_conflicts('/etc/harold/Po_kom_zvonit_kolokol/conflicts/conflicts_2.csv')
 
-        self.file_processor.save_pos_to_pickle(self.speech_parts)
+        self.file_processor.save_speech_parts_to_pickle(self.speech_parts)
+        self.file_processor.save_pos_to_pickle(self.pos)
+        self.file_processor.save_punctuation_to_pickle(self.punctuation)
         """
 
-        self.speech_parts = self.file_processor.load_pos_from_pickle()
-
+        self.speech_parts = self.file_processor.load_speech_parts_from_pickle()
+        self._pos = self.file_processor.load_pos_from_pickle()
+        self._punctuation = self.file_processor.load_punctuation_from_pickle()
 
         import pdb
         pdb.set_trace()
 
         for item in self.punctuation:
             print item, self.punctuation[item]
+
+        for item in self.pos:
+            print item, self.pos[item]
 

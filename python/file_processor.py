@@ -38,6 +38,8 @@ class FileProcessor(object):
         if not os.path.exists(self.pickles_folder):
             os.makedirs(self.pickles_folder)
 
+        self.speech_parts_filename = '/'.join([self.pickles_folder, 'speech_parts.pkl'])
+        self.punctuation_filename = '/'.join([self.pickles_folder, 'punctuation.pkl'])
         self.pos_filename = '/'.join([self.pickles_folder, 'pos.pkl'])
 
     def save_conflicts_to_csv(self, conflicts, sentences):
@@ -105,12 +107,50 @@ class FileProcessor(object):
 
         return result
 
-    def save_pos_to_pickle(self, speech_parts):
+    def save_speech_parts_to_pickle(self, speech_parts):
+        """Сохраняет собранные части речи в файл
+        """
+
+        output = open(self.speech_parts_filename, 'wb')
+        pickle.dump(speech_parts, output, 2)
+        output.close()
+        logger.info('[PICKLE] File was written: {file}'.format(file=self.speech_parts_filename))
+
+    def load_speech_parts_from_pickle(self):
+        """Загружает сохраненные части речи"""
+
+        inp = open(self.speech_parts_filename, 'rb')
+        obj = pickle.load(inp)
+        inp.close()
+        logger.info('[PICKLE] File was read: {file}'.format(file=self.speech_parts_filename))
+
+        return obj
+
+    def save_punctuation_to_pickle(self, punctuation):
+        """Сохраняет собранные части речи в файл
+        """
+
+        output = open(self.punctuation_filename, 'wb')
+        pickle.dump(punctuation, output, 2)
+        output.close()
+        logger.info('[PICKLE] File was written: {file}'.format(file=self.punctuation_filename))
+
+    def load_punctuation_from_pickle(self):
+        """Загружает сохраненные части речи"""
+
+        inp = open(self.punctuation_filename, 'rb')
+        obj = pickle.load(inp)
+        inp.close()
+        logger.info('[PICKLE] File was read: {file}'.format(file=self.punctuation_filename))
+
+        return obj
+
+    def save_pos_to_pickle(self, pos):
         """Сохраняет собранные части речи в файл
         """
 
         output = open(self.pos_filename, 'wb')
-        pickle.dump(speech_parts, output, 2)
+        pickle.dump(pos, output, 2)
         output.close()
         logger.info('[PICKLE] File was written: {file}'.format(file=self.pos_filename))
 
