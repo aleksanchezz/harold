@@ -1,0 +1,18 @@
+PyFb2 is library for read .fb2 books via python.
+Now it support only base functions:
+
+- read file
+- get title-info
+- publish-info
+- document-info
+- body
+- convert all body text to text or html (not for all tags)
+
+In future:
+
+- add text and html presentation for all tags
+- add support for file
+- move *-info tags to new format
+- pagination
+- sections
+- generate table of contents

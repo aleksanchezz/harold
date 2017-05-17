@@ -1,0 +1,13 @@
+PyYAML==3.12
+docopt==0.6.2
+lxml==3.7.3
+pdb==0.1
+pipreqs==0.4.7
+python-gnupg==0.4.0
+requests==2.13.0
+yarg==0.1.9
+psycopg2==2.7.1
+SQLAlchemy==1.1.9
+pymorphy2==0.8
+pymorphy2-dicts==2.4.393442.3710985
+transliterate==1.9
