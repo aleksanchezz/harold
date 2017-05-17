@@ -4,7 +4,7 @@ from common import Common
 import logging
 
 
-LOG = logging.getLogger('body')
+# LOG = logging.getLogger('body')
 
 
 class MainTag(Common):
@@ -26,8 +26,8 @@ class MainTag(Common):
             try:
                 t = TAGS[name](child)
             except KeyError:
-                LOG.error("I'm not know tag %s in line %s" %
-                    (name, child.sourceline))
+                # LOG.error("I'm not know tag %s in line %s" %
+                #     (name, child.sourceline))
                 continue
             self.add_tag(t)
 

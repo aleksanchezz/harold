@@ -22,6 +22,7 @@ from nltk import sent_tokenize, word_tokenize
 from config.settings import CUSTOM_PUNCTUATION_SYMBOLS, PUNCTUATION_SYMBOLS, SPEECH_PARTS
 from pymorphy2 import MorphAnalyzer
 from db.models import DataBaseConnection, Text
+import time
 
 logger = logging.getLogger('harold.text_processor')
 
@@ -205,7 +206,6 @@ class TextProcessor(object):
     def _define_part_of_speech(self):
         """Проходит по тексту и определяет части речи каждого слова"""
         conflicts = dict()
-        print "in morph"
         morph = MorphAnalyzer()
         _count = 0
         for s in range(self.sentences_count):
@@ -305,6 +305,16 @@ class TextProcessor(object):
 
         self.file_processor.save_ngramm_to_pickle(self.ngramm_list)
 
+    def save_pickles(self):
+        self.file_processor.save_speech_parts_to_pickle(self.speech_parts)
+        self.file_processor.save_pos_to_pickle(self.pos)
+        self.file_processor.save_punctuation_to_pickle(self.punctuation)
+
+    def load_pickles(self):
+        self.speech_parts = self.file_processor.load_speech_parts_from_pickle()
+        self._pos = self.file_processor.load_pos_from_pickle()
+        self._punctuation = self.file_processor.load_punctuation_from_pickle()
+
     def main_text_processing(self):
         """
         Фактически точка входу в обработку текста:
@@ -314,12 +324,9 @@ class TextProcessor(object):
             + разбить предложения на слова
             + обработать слова
             + КОНФЛИКТЫ
-            - собрать статистику
-            - сохранить новые N-граммы
+            + собрать статистику
+            + сохранить новые N-граммы
         """
-        """
-        При тестировании неразумно каждый раз загружать информацию из файла
-        Реализован механизм считывания частей речи из файла .pickle
 
         raw_text = self.file.text
 
@@ -337,29 +344,83 @@ class TextProcessor(object):
 
         self._resolve_conflicts('/etc/harold/Po_kom_zvonit_kolokol/conflicts/conflicts_2.csv')
 
-        self.file_processor.save_speech_parts_to_pickle(self.speech_parts)
-        self.file_processor.save_pos_to_pickle(self.pos)
-        self.file_processor.save_punctuation_to_pickle(self.punctuation)
+        # self.save_pickles()
+        # self.load_pickles()
 
-
-        """
-        db_book_id = self.file.save_book_info_to_db()
-
-        self.speech_parts = self.file_processor.load_speech_parts_from_pickle()
-        self._pos = self.file_processor.load_pos_from_pickle()
-        self._punctuation = self.file_processor.load_punctuation_from_pickle()
         self._collect_ngramms()
 
+        db_book_id = self.file.save_book_info_to_db()
         self._save_text_to_db(db_book_id)
 
-        import pdb
-        pdb.set_trace()
+    def raw_text_processing(self):
+        """Начало обработки - чистый текст + токенизация + проблемы с пунктуацией"""
 
-        """
-        for item in self.punctuation:
-            print item, self.punctuation[item]
+        raw_text = self.file.text
+        print "\tText: {title}, ({code_name})".format(title=self.file.title.encode('utf-8'),
+                                                      code_name=self.file.book_code_name.encode('utf-8'))
+        print "\tAuthor: {}".format(self.file.author.encode('utf-8'))
+        print
 
-        for item in self.pos:
-            print item, self.pos[item]
-        """
+        ts = time.time()
+        cleared_raw_text = self._remove_and_replace_symbols(raw_text)
+        parsing_conflicts = self._split_into_tokens(cleared_raw_text)
+        te = time.time()
+
+        print "\tSentences in text: {}".format(self.sentences_count)
+        print "\tWords in text: {}".format(self.words_count)
+        print "\tTime taken: {} s".format(te-ts)
+        print
+
+        if parsing_conflicts > 0:
+            print '\tParsing conflicts were detected: {n}'.format(n=parsing_conflicts)
+        else:
+            print '\tText parsed without conflicts!'
+
+    def morphological_definition(self):
+        """Обработка слов и попытка определить их части речи"""
+
+        ts = time.time()
+        v = self._define_part_of_speech()
+        te = time.time()
+
+        print "\tTime taken: {} s".format(te - ts)
+        print
+        self.save_pickles()
+
+        print '\tYou do not need to parse raw text anymore,\n' \
+              '\teverything you need for further processing is saved to folder: {}'.\
+            format(self.file_processor.pickles_folder)
+        print
+
+        morph_conflicts, path = self.file_processor.save_conflicts_to_csv(v, self.sentences)
+        if morph_conflicts > 0:
+            print '\t{} conflicts were written to file: {}'.format(morph_conflicts, path)
+
+        else:
+            print '\tText proceeded without conflicts!'
+
+    def morphological_resolution(self, filename):
+        """Разрешение конфликтов морфологии"""
+
+        ts = time.time()
+        self._resolve_conflicts(filename)
+        te = time.time()
+
+        print "\tTime taken: {} s".format(te - ts)
+        print
+
+        self.save_pickles()
+
+    def statistics(self):
+        """Собрать статистику"""
+
+        ts = time.time()
+        self._collect_ngramms()
+        db_book_id = self.file.save_book_info_to_db()
+        self._save_text_to_db(db_book_id)
+        te = time.time()
+
+        print "\tTime taken: {} s".format(te - ts)
+        print
+
 
