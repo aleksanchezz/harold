@@ -68,7 +68,7 @@ class TextProcessor(object):
 
     @property
     def ngramm_list(self):
-        if self._ngramm_list is None:
+        if not self._ngramm_list:
             self._ngramm_list = self.file_processor.load_ngramm_from_pickle()
         return self._ngramm_list
 
