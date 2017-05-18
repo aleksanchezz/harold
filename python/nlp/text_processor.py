@@ -192,7 +192,8 @@ class TextProcessor(object):
 
         for item in resolved_conflicts:
             self.speech_parts[item[1]][item[2]] = item[0]
-            self.pos[item[0]] += 1
+            if item[0] != u'NONE':
+                self.pos[item[0]] += 1
 
         result = self._check_for_conflicts()
 
@@ -248,11 +249,15 @@ class TextProcessor(object):
     def _check_for_conflicts(self):
         """Проверяет массив self.speech_parts на наличие записи 'NOPOS'
         """
-        for sentence in self.speech_parts:
-            for word in sentence:
-                if word == 'NOPOS':
-                    return False
-        return True
+        res = True
+        for s, sentence in enumerate(self.speech_parts):
+            for w, word in enumerate(sentence):
+                if word == u'NOPOS':
+                    res = False
+                if word == u'NONE':
+                    del self.speech_parts[s][w]
+
+        return res
 
     def _add_ngramm(self, _ngramm):
         """Добавляет N-грамму в словарь self.ngramm и в список self.ngramm_list"""
