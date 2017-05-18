@@ -169,7 +169,7 @@ class TextProcessor(object):
                     self.words_count += 1
                     _word = self._process_word(_word).lower()
                     clean_words.append(_word)
-                    if not _word.isalpha() and '-' not in _word and not _word.isnumeric():
+                    if not _word.isalpha() and '-' not in _word and not _word.isdigit():
                         _count += 1
                         logger.warn('Tokenization failure: {word}\n'
                                     '\t sentence ({n}, {m}):\n[ {sentence} ]\n'.format(word=_word.encode('utf-8'),
