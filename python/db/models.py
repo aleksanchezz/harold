@@ -101,7 +101,12 @@ class DataBaseConnection(object):
     def close_session(self):
         self.session.commit()
 
-    def get_id(self, table):
+    def get_id(self, table, code_name=None):
+        if code_name:
+            v = self.session.query(table.id).filter(table.code_name==code_name)
+            if v.count() > 0:
+                return v.first()[0]
+
         return len(self.simple_select(table)) + 1
 
 
