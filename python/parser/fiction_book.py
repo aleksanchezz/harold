@@ -29,6 +29,7 @@ class FictionBook(PyFb2):
         self._file_info = None
         self._book_info = None
         self._book_code_name = None
+        self._author_code_name = None
 
     @property
     def author(self):
@@ -78,6 +79,12 @@ class FictionBook(PyFb2):
             self._book_code_name = self.traslit(self.book_info['title'])
         return self._book_code_name
 
+    @property
+    def author_code_name(self):
+        if self._author_code_name is None:
+            self._author_code_name = self.traslit(self.book_info['author'])
+        return self._author_code_name
+
     def _get_meta_info(self):
         res = {}
         res.update({"encoding": self._get_encoding()})
@@ -115,12 +122,12 @@ class FictionBook(PyFb2):
         Сохраняет информацию об обработанной книге и авторе в БД harold
         """
         dbc = DataBaseConnection()
-        _author_id = dbc.get_id(Author)
-        _book_id = dbc.get_id(Book)
+        _author_id = dbc.get_id(Author, code_name=self.author_code_name)
+        _book_id = dbc.get_id(Book, code_name=self.book_code_name)
 
         author = Author(id=_author_id,
                         name=self.book_info['author'],
-                        code_name=self.traslit(self.book_info['author'])
+                        code_name=self.author_code_name
                         )
 
         book = Book(id=_book_id,
@@ -128,7 +135,7 @@ class FictionBook(PyFb2):
                     author_id=_author_id,
                     genre=','.join(self.book_info['genres']),
                     date=self.book_info['date'],
-                    code_name=self.book_info['title']
+                    code_name=self.book_code_name
                     )
 
         _author_id = dbc.create_or_update(author)

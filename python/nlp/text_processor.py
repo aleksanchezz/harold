@@ -68,7 +68,7 @@ class TextProcessor(object):
 
     @property
     def ngramm_list(self):
-        if self._ngramm_list is None:
+        if not self._ngramm_list:
             self._ngramm_list = self.file_processor.load_ngramm_from_pickle()
         return self._ngramm_list
 
@@ -169,7 +169,7 @@ class TextProcessor(object):
                     self.words_count += 1
                     _word = self._process_word(_word).lower()
                     clean_words.append(_word)
-                    if not _word.isalpha() and '-' not in _word and not _word.isnumeric():
+                    if not _word.isalpha() and '-' not in _word and not _word.isdigit():
                         _count += 1
                         logger.warn('Tokenization failure: {word}\n'
                                     '\t sentence ({n}, {m}):\n[ {sentence} ]\n'.format(word=_word.encode('utf-8'),
@@ -192,7 +192,8 @@ class TextProcessor(object):
 
         for item in resolved_conflicts:
             self.speech_parts[item[1]][item[2]] = item[0]
-            self.pos[item[0]] += 1
+            if item[0] != u'NONE':
+                self.pos[item[0]] += 1
 
         result = self._check_for_conflicts()
 
@@ -248,11 +249,15 @@ class TextProcessor(object):
     def _check_for_conflicts(self):
         """Проверяет массив self.speech_parts на наличие записи 'NOPOS'
         """
-        for sentence in self.speech_parts:
-            for word in sentence:
-                if word == 'NOPOS':
-                    return False
-        return True
+        res = True
+        for s, sentence in enumerate(self.speech_parts):
+            for w, word in enumerate(sentence):
+                if word == u'NOPOS':
+                    res = False
+                if word == u'NONE':
+                    del self.speech_parts[s][w]
+
+        return res
 
     def _add_ngramm(self, _ngramm):
         """Добавляет N-грамму в словарь self.ngramm и в список self.ngramm_list"""

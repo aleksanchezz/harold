@@ -173,6 +173,7 @@ class FileProcessor(object):
         obj = pickle.load(inp)
         inp.close()
         logger.info('[PICKLE] File was read: {file}'.format(file=self.ngramm_filename))
+        print 'ngramm loaded:', len(obj)
 
         return obj
 
@@ -182,4 +183,5 @@ class FileProcessor(object):
         output = open(self.ngramm_filename, 'wb')
         pickle.dump(ngramm, output, 2)
         output.close()
+        print 'ngramm saved:', len(ngramm)
         logger.info('[PICKLE] File was written: {file}'.format(file=self.ngramm_filename))
