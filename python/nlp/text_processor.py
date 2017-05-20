@@ -288,13 +288,14 @@ class TextProcessor(object):
 
         return result
 
-    def _save_text_to_db(self, book_id):
+    def _save_text_to_db(self, book_id, author_id):
         """Сохраняет собранные статистики в БД Harold"""
 
         dbc = DataBaseConnection()
         _text_id = dbc.get_id(Text)
         text = Text(id=_text_id,
                     book_id=book_id,
+                    author_id=author_id,
                     ngramms_array=self._make_statistic_array(self.ngramm, self.ngramm_list),
                     parts_array=self._make_statistic_array(self.pos, SPEECH_PARTS),
                     punct_array=self._make_statistic_array(self.punctuation, PUNCTUATION_SYMBOLS),
@@ -428,8 +429,8 @@ class TextProcessor(object):
 
         ts = time.time()
         self._collect_ngramms()
-        db_book_id = self.file.save_book_info_to_db()
-        self._save_text_to_db(db_book_id)
+        db_book_id, db_author_id = self.file.save_book_info_to_db()
+        self._save_text_to_db(db_book_id, db_author_id)
         te = time.time()
 
         print "\tTime taken: {} s".format(te - ts)

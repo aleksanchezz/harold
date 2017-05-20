@@ -1,7 +1,14 @@
-INSERT INTO authors (id, name, code_name)
-VALUES
-(1, 'сергей тестов','sergey_testov');
+-- Добавить колонку авторов в таблицу текстов
 
-INSERT INTO books (id, title, author_id, genre, date, code_name)
-VALUES
-(1, 'Простая проверка таблицы', 1, 'грусть-печаль', '1999-99-99', 'prostay_proverka_tablicy');
+ALTER TABLE texts ADD COLUMN author_id integer NOT NULL DEFAULT 1;
+
+UPDATE texts SET author_id = 2 where id = 2;
+UPDATE texts SET author_id = 2 where id = 3;
+UPDATE texts SET author_id = 3 where id = 4;
+UPDATE texts SET author_id = 3 where id = 5;
+UPDATE texts SET author_id = 4 where id = 6;
+UPDATE texts SET author_id = 4 where id = 7;
+UPDATE texts SET author_id = 5 where id = 8;
+
+ALTER TABLE texts ALTER COLUMN author_id DROP DEFAULT;
+ALTER TABLE texts ADD FOREIGN KEY(author_id) REFERENCES authors(id);

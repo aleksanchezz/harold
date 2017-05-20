@@ -140,6 +140,7 @@ class Text(dbc.base):
 
     id = Column(Integer, primary_key=True)
     book_id = Column(Integer, ForeignKey('books.id'))
+    author_id = Column(Integer, ForeignKey('authors.id'))
     ngramms_array = Column(ARRAY(Integer, dimensions=1))
     parts_array = Column(ARRAY(Integer, dimensions=1))
     punct_array = Column(ARRAY(Integer, dimensions=1))

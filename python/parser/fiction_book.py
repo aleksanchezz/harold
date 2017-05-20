@@ -141,4 +141,4 @@ class FictionBook(PyFb2):
         _author_id = dbc.create_or_update(author)
         _book_id = dbc.create_or_update(book)
         dbc.close_session()
-        return _book_id
+        return _book_id, _author_id
