@@ -64,8 +64,10 @@ def ui():
                 _ = raw_input("\tPlease, enter file with resolved conflicts: ")
                 if not tp.speech_parts:
                     tp.load_pickles()
-                tp.morphological_resolution(_)
-                print "\tAll conflicts were resolved, now you can collect N-gramm statistics"
+                if tp.morphological_resolution(_):
+                    print "\tAll conflicts were resolved, now you can collect N-gramm statistics"
+                else:
+                    print "\tSomething wrong with conflicts!"
             else:
                 print 'ERROR - no text'
 

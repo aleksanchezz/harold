@@ -43,6 +43,8 @@ class FileProcessor(object):
         self.pos_filename = '/'.join([self.pickles_folder, 'pos.pkl'])
         self.ngramm_filename = '/'.join([NGRAMMS_FOLDER_PATH, 'ngramm.pkl'])
 
+        self.ngramm_backup_folder = '/'.join([NGRAMMS_FOLDER_PATH, 'backups'])
+
     def save_conflicts_to_csv(self, conflicts, sentences):
         """Записывает слова с csv файл в следующем формате:
 
@@ -185,3 +187,13 @@ class FileProcessor(object):
         output.close()
         print 'ngramm saved:', len(ngramm)
         logger.info('[PICKLE] File was written: {file}'.format(file=self.ngramm_filename))
+
+        # BACKUP
+        filename = 'ngramms'
+        counter = len(os.listdir(self.ngramm_backup_folder)) + 1
+        filename = filename + '_' + str(counter) + '_' + str(len(ngramm)) + '.pkl'
+        filename = '/'.join([self.ngramm_backup_folder, filename])
+
+        output = open(filename, 'wb')
+        pickle.dump(ngramm, output, 2)
+        output.close()

@@ -187,13 +187,19 @@ class TextProcessor(object):
         """Заменяет элменты со значением 'NOPOS' в массиве self.speech_parts,
         считав информацию из указанного файла
         """
-
         resolved_conflicts = self.file_processor.read_conflicts_from_csv(filename)
 
+        # Разрешить те конфликты, которые можно разрешить
         for item in resolved_conflicts:
             self.speech_parts[item[1]][item[2]] = item[0]
             if item[0] != u'NONE':
                 self.pos[item[0]] += 1
+
+        # Удалить признанное лишним
+        res = []
+        for item in self.speech_parts:
+            res.append(filter(lambda w: w != u'NONE', item))
+        self.speech_parts = res
 
         result = self._check_for_conflicts()
 
@@ -202,7 +208,7 @@ class TextProcessor(object):
         else:
             logger.error('\nNot all conflicts were resolved from file: {file}'.format(file=filename))
 
-        return
+        return result
 
     def _define_part_of_speech(self):
         """Проходит по тексту и определяет части речи каждого слова"""
@@ -255,7 +261,7 @@ class TextProcessor(object):
                 if word == u'NOPOS':
                     res = False
                 if word == u'NONE':
-                    del self.speech_parts[s][w]
+                    res = False
 
         return res
 
@@ -408,13 +414,14 @@ class TextProcessor(object):
         """Разрешение конфликтов морфологии"""
 
         ts = time.time()
-        self._resolve_conflicts(filename)
+        res = self._resolve_conflicts(filename)
         te = time.time()
 
         print "\tTime taken: {} s".format(te - ts)
         print
 
         self.save_pickles()
+        return res
 
     def statistics(self):
         """Собрать статистику"""
