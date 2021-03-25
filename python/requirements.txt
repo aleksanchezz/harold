@@ -1,4 +1,4 @@
-PyYAML==3.12
+PyYAML==5.4
 docopt==0.6.2
 lxml==3.7.3
 pdb==0.1
